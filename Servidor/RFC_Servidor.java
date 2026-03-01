@@ -25,12 +25,20 @@ public class RFC_Servidor {
             while (true) {
 
                 Socket socket = serverSocket.accept();
+
                 System.out.println("Cliente conectado desde: "
                         + socket.getInetAddress().getHostAddress());
 
-                atenderCliente(socket);
-
-                System.out.println("Cliente desconectado.\n");
+                new Thread(() -> {
+                    try {
+                        atenderCliente(socket);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        System.out.println("Cliente desconectado: "
+                                + socket.getInetAddress().getHostAddress());
+                    }
+                }).start();
             }
 
         } catch (IOException e) {
