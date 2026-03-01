@@ -37,11 +37,26 @@ public class RFC_Servidor {
                         + " | Puerto: " + puertoCliente);
 
                 new Thread(() -> {
-                    try {
-                        atenderCliente(socket);
+                    try (
+                            BufferedReader entrada = new BufferedReader(
+                                    new InputStreamReader(socket.getInputStream()));
+                            PrintWriter salida = new PrintWriter(
+                                    socket.getOutputStream(), true)
+                    ) {
+
+                        // 🟢 1. Handshake (mensaje inicial libre)
+                        atenderMensaje(entrada, salida, ipCliente, puertoCliente);
+
+                        // 🔵 2. Protocolo normal de conversiones
+                        atenderCliente(entrada, salida, ipCliente, puertoCliente);
+
                     } catch (Exception e) {
                         e.printStackTrace();
                     } finally {
+                        try {
+                            socket.close();
+                        } catch (IOException ignored) {}
+
                         System.out.println("Cliente desconectado -> IP: "
                                 + ipCliente + " | Puerto: " + puertoCliente);
                     }
@@ -53,30 +68,37 @@ public class RFC_Servidor {
         }
     }
 
-    private static void atenderCliente(Socket socket) {
+    private static void atenderMensaje(BufferedReader entrada, PrintWriter salida, String ip, int puerto) throws IOException {
 
-        try (
-                BufferedReader entrada = new BufferedReader(
-                        new InputStreamReader(socket.getInputStream()));
-                PrintWriter salida = new PrintWriter(
-                        socket.getOutputStream(), true)
-        ) {
+        String mensajeInicial = entrada.readLine();
 
-            String mensaje;
+        if (mensajeInicial != null) {
+            System.out.println("Mensaje inicial recibido -> IP: "
+                    + ip + " | Puerto: " + puerto);
+            System.out.println("Contenido: " + mensajeInicial);
 
-            while ((mensaje = entrada.readLine()) != null) {
+            // Eco al cliente (confirmación)
+            salida.println("Servidor recibió tu mensaje inicial: " + mensajeInicial);
+        }
+    }
 
-                System.out.println("Solicitud recibida: " + mensaje);
+    private static void atenderCliente(BufferedReader entrada,
+                                       PrintWriter salida,
+                                       String ip,
+                                       int puerto) throws IOException {
 
-                String respuesta = procesarSolicitud(mensaje);
+        String mensaje;
 
-                salida.println(respuesta);
+        while ((mensaje = entrada.readLine()) != null) {
 
-                System.out.println("Respuesta enviada: " + respuesta);
-            }
+            System.out.println("Solicitud recibida -> IP: "
+                    + ip + " | Puerto: " + puerto);
+            System.out.println("Datos: " + mensaje);
 
-        } catch (IOException e) {
-            System.out.println("Error en la comunicación con el cliente.");
+            String respuesta = procesarSolicitud(mensaje);
+
+            System.out.println("Respuesta enviada: " + respuesta);
+            salida.println(respuesta);
         }
     }
 

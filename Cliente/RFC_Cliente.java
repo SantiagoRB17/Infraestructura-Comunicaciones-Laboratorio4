@@ -22,6 +22,11 @@ public class RFC_Cliente {
             System.out.println("   CLIENTE CONVERSION NUMERICA");
             System.out.println("=================================");
 
+            // 🔥 NUEVO: mensaje inmediato al conectarse
+            System.out.print("Ingrese un mensaje inicial para el servidor: ");
+            String mensajeInicial = sc.nextLine();
+            salida.println(mensajeInicial);
+
             while (true) {
 
                 mostrarMenu();
