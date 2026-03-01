@@ -22,12 +22,19 @@ public class RFC_Servidor {
             System.out.println("Servidor iniciado en puerto " + PUERTO);
             System.out.println("Esperando conexiones...\n");
 
+            int contador = 0;
+
             while (true) {
 
                 Socket socket = serverSocket.accept();
+                contador++;
 
-                System.out.println("Cliente conectado desde: "
-                        + socket.getInetAddress().getHostAddress());
+                String ipCliente = socket.getInetAddress().getHostAddress();
+                int puertoCliente = socket.getPort();
+
+                System.out.println("Cliente #" + contador
+                        + " conectado desde IP: " + ipCliente
+                        + " | Puerto: " + puertoCliente);
 
                 new Thread(() -> {
                     try {
@@ -35,8 +42,8 @@ public class RFC_Servidor {
                     } catch (Exception e) {
                         e.printStackTrace();
                     } finally {
-                        System.out.println("Cliente desconectado: "
-                                + socket.getInetAddress().getHostAddress());
+                        System.out.println("Cliente desconectado -> IP: "
+                                + ipCliente + " | Puerto: " + puertoCliente);
                     }
                 }).start();
             }
