@@ -37,17 +37,29 @@ public class RFC_Servidor {
                         + " | Puerto: " + puertoCliente);
 
                 new Thread(() -> {
-                    try (
-                            BufferedReader entrada = new BufferedReader(
-                                    new InputStreamReader(socket.getInputStream()));
-                            PrintWriter salida = new PrintWriter(
-                                    socket.getOutputStream(), true)
-                    ) {
+                    try {
+                        socket.setSoTimeout(10000); // ⏱️ 10 segundos para el mensaje inicial
 
-                        // 🟢 1. Handshake (mensaje inicial libre)
-                        atenderMensaje(entrada, salida, ipCliente, puertoCliente);
+                        BufferedReader entrada = new BufferedReader(
+                                new InputStreamReader(socket.getInputStream()));
+                        PrintWriter salida = new PrintWriter(
+                                socket.getOutputStream(), true);
 
-                        // 🔵 2. Protocolo normal de conversiones
+                        // 🟢 Handshake con timeout
+                        boolean mensajeRecibido = atenderMensaje(
+                                entrada, salida, socket, ipCliente, puertoCliente);
+
+                        if (!mensajeRecibido) {
+                            System.out.println("Cerrando conexión por falta de mensaje inicial -> IP: "
+                                    + ipCliente + " | Puerto: " + puertoCliente);
+                            socket.close();
+                            return; // TERMINA el hilo aquí
+                        }
+
+                        // 🔓 Quitamos el timeout para la comunicación normal
+                        socket.setSoTimeout(0); // 0 = sin límite de tiempo
+
+                        // 🔵 Ahora sí: protocolo normal de conversiones
                         atenderCliente(entrada, salida, ipCliente, puertoCliente);
 
                     } catch (Exception e) {
@@ -68,17 +80,38 @@ public class RFC_Servidor {
         }
     }
 
-    private static void atenderMensaje(BufferedReader entrada, PrintWriter salida, String ip, int puerto) throws IOException {
+    private static boolean atenderMensaje(BufferedReader entrada,
+                                          PrintWriter salida,
+                                          Socket socket,
+                                          String ip,
+                                          int puerto) {
 
-        String mensajeInicial = entrada.readLine();
+        try {
+            System.out.println("Esperando mensaje inicial del cliente -> IP: "
+                    + ip + " | Puerto: " + puerto);
 
-        if (mensajeInicial != null) {
+            String mensajeInicial = entrada.readLine();
+
+            if (mensajeInicial == null) {
+                System.out.println("Cliente no envió mensaje inicial.");
+                return false;
+            }
+
             System.out.println("Mensaje inicial recibido -> IP: "
                     + ip + " | Puerto: " + puerto);
             System.out.println("Contenido: " + mensajeInicial);
 
-            // Eco al cliente (confirmación)
-            salida.println("Servidor recibió tu mensaje inicial: " + mensajeInicial);
+            salida.println("Mensaje inicial recibido correctamente.");
+            return true;
+
+        } catch (java.net.SocketTimeoutException e) {
+            System.out.println("Tiempo de espera agotado (10s). Cliente no envió mensaje inicial -> IP: "
+                    + ip + " | Puerto: " + puerto);
+            return false;
+
+        } catch (IOException e) {
+            System.out.println("Error al recibir mensaje inicial: " + e.getMessage());
+            return false;
         }
     }
 
