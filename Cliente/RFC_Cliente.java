@@ -23,9 +23,32 @@ public class RFC_Cliente {
             System.out.println("=================================");
 
             // 🔥 NUEVO: mensaje inmediato al conectarse
-            System.out.print("Ingrese un mensaje inicial para el servidor: ");
-            String mensajeInicial = sc.nextLine();
+            System.out.print("Ingrese un mensaje inicial para el servidor (10 segundos): ");
+
+            String mensajeInicial = leerConTimeout(sc, 10);
+
+            // ⏱️ Si el usuario NO escribió nada en 10 segundos
+            if (mensajeInicial == null || mensajeInicial.trim().isEmpty()) {
+                System.out.println("\n⚠ Tiempo límite alcanzado (10 segundos).");
+                System.out.println("Desconectado por inactividad.");
+                socket.close();
+                return; // Termina el cliente inmediatamente
+            }
+
+            // Si sí escribió, se envía normal
             salida.println(mensajeInicial);
+
+            // 🔥 CLAVE: consumir la respuesta del servidor (handshake)
+            String respuestaInicial = entrada.readLine();
+
+            if (respuestaInicial == null) {
+                System.out.println("El servidor cerró la conexión.");
+                socket.close();
+                return;
+            }
+
+            System.out.println("Servidor: " + respuestaInicial);
+            System.out.println();
 
             while (true) {
 
@@ -44,19 +67,55 @@ public class RFC_Cliente {
                     continue;
                 }
 
-                // Enviar al servidor
-                salida.println(mensaje);
+                try {
+                    // Enviar al servidor
+                    salida.println(mensaje);
 
-                // Recibir respuesta
-                String respuesta = entrada.readLine();
+                    // Recibir respuesta
+                    String respuesta = entrada.readLine();
 
-                System.out.println("Resultado recibido: " + respuesta);
-                System.out.println();
+                    // 💀 Detectar desconexión del servidor (clave)
+                    if (respuesta == null) {
+                        System.out.println("\n⚠ Desconectado del servidor por inactividad (10 segundos sin mensaje inicial).");
+                        System.out.println("El servidor cerró la conexión.");
+                        break;
+                    }
+
+                    System.out.println("Resultado recibido: " + respuesta);
+                    System.out.println();
+
+                } catch (IOException e) {
+                    System.out.println("\n⚠ Conexión cerrada por el servidor (posible inactividad).");
+                    break;
+                }
             }
 
         } catch (IOException e) {
             System.out.println("No se pudo conectar con el servidor.");
         }
+    }
+
+    private static String leerConTimeout(Scanner sc, int segundos) {
+        final String[] resultado = new String[1];
+
+        Thread hiloEntrada = new Thread(() -> {
+            try {
+                if (sc.hasNextLine()) {
+                    resultado[0] = sc.nextLine();
+                }
+            } catch (Exception ignored) {}
+        });
+
+        hiloEntrada.setDaemon(true);
+        hiloEntrada.start();
+
+        try {
+            hiloEntrada.join(segundos * 1000L); // Espera X segundos
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return resultado[0]; // Será null si no escribió nada a tiempo
     }
 
     private static void mostrarMenu() {
