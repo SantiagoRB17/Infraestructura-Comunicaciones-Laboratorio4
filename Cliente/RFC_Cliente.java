@@ -71,18 +71,44 @@ public class RFC_Cliente {
                     // Enviar al servidor
                     salida.println(mensaje);
 
-                    // Recibir respuesta
-                    String respuesta = entrada.readLine();
+                    // 🔹 Si es opción 7 → respuesta multilínea
+                    if (opcion.equals("7")) {
 
-                    // 💀 Detectar desconexión del servidor (clave)
-                    if (respuesta == null) {
-                        System.out.println("\n⚠ Desconectado del servidor por inactividad (10 segundos sin mensaje inicial).");
-                        System.out.println("El servidor cerró la conexión.");
-                        break;
+                        System.out.println("\nResultado recibido:");
+
+                        String lineaRespuesta;
+
+                        while (true) {
+                            lineaRespuesta = entrada.readLine();
+
+                            if (lineaRespuesta == null) {
+                                System.out.println("\n⚠ El servidor cerró la conexión.");
+                                break;
+                            }
+
+                            // Delimitador de fin del bloque
+                            if (lineaRespuesta.equals("FIN_RESPUESTA")) {
+                                break;
+                            }
+
+                            System.out.println(lineaRespuesta);
+                        }
+
+                        System.out.println();
+
+                    } else {
+
+                        // 🔹 Respuesta normal (una sola línea)
+                        String respuesta = entrada.readLine();
+
+                        if (respuesta == null) {
+                            System.out.println("\n⚠ Desconectado del servidor.");
+                            break;
+                        }
+
+                        System.out.println("Resultado recibido: " + respuesta);
+                        System.out.println();
                     }
-
-                    System.out.println("Resultado recibido: " + respuesta);
-                    System.out.println();
 
                 } catch (IOException e) {
                     System.out.println("\n⚠ Conexión cerrada por el servidor (posible inactividad).");
@@ -125,6 +151,7 @@ public class RFC_Cliente {
         System.out.println("4. Hexadecimal -> Decimal");
         System.out.println("5. Binario -> Hexadecimal");
         System.out.println("6. Hexadecimal -> Binario");
+        System.out.println("7. Enviar mensaje multilínea");
         System.out.println("0. Salir");
         System.out.print("Seleccione una opción: ");
     }
@@ -168,6 +195,26 @@ public class RFC_Cliente {
                 System.out.print("Ingrese numero hexadecimal: ");
                 String hex2 = sc.nextLine();
                 return "6;" + hex2;
+
+            case "7":
+                System.out.println("Ingrese su mensaje multilínea.");
+                System.out.println("Escriba 'FIN' en una línea nueva para terminar:");
+
+                StringBuilder mensajeMultilinea = new StringBuilder();
+                String linea;
+
+                while (true) {
+                    linea = sc.nextLine();
+
+                    if (linea.equals("FIN")) {
+                        break;
+                    }
+
+                    mensajeMultilinea.append(linea).append("\n");
+                }
+
+                // Enviamos primero el comando 7 y luego el bloque completo
+                return "7\n" + mensajeMultilinea.toString() + "FIN";
 
             default:
                 return null;

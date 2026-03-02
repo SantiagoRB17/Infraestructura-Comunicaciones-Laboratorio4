@@ -128,6 +128,40 @@ public class RFC_Servidor {
                     + ip + " | Puerto: " + puerto);
             System.out.println("Datos: " + mensaje);
 
+            // 🔥 NUEVO: detectar protocolo multilínea
+            if (mensaje.equals("7")) {
+
+                System.out.println("Modo mensaje multilínea activado -> IP: "
+                        + ip + " | Puerto: " + puerto);
+
+                StringBuilder bloque = new StringBuilder();
+                String linea;
+
+                // Leer hasta que llegue "FIN"
+                while ((linea = entrada.readLine()) != null) {
+
+                    if (linea.equals("FIN")) {
+                        break;
+                    }
+
+                    bloque.append(linea).append("\n");
+                }
+
+                salida.println("MENSAJE MULTILINEA RECIBIDO:");
+
+                // Enviar línea por línea
+                String[] lineas = bloque.toString().split("\n");
+                for (String l : lineas) {
+                    salida.println(l);
+                }
+
+                // Delimitador FINAL (CLAVE)
+                salida.println("FIN_RESPUESTA");
+
+                continue; // 🔥 vuelve al menú normal sin pasar por el parser
+            }
+
+            // 🔵 Protocolo normal de conversiones (intacto)
             String respuesta = procesarSolicitud(mensaje);
 
             System.out.println("Respuesta enviada: " + respuesta);
